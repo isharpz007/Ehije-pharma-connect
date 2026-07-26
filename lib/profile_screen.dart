@@ -73,6 +73,13 @@ class ProfileScreen extends StatelessWidget {
                                       'Not signed in',
                                   style: const TextStyle(fontSize: 12, color: Colors.white70),
                                 ),
+                                if ((AuthService.instance.currentUser?['phone'] as String?)
+                                        ?.isNotEmpty ==
+                                    true)
+                                  Text(
+                                    AuthService.instance.currentUser!['phone'] as String,
+                                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                  ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [

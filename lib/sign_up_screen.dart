@@ -19,6 +19,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -54,6 +55,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       name: name,
       emailOrPhone: email,
       password: password,
+      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
     );
 
     if (!mounted) return;
@@ -73,6 +75,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -175,12 +178,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 20),
 
                   // Email field
-                  _fieldLabel('Email or phone number'),
+                  _fieldLabel('Email address'),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: _fieldDecoration('Enter your email or phone'),
+                    decoration: _fieldDecoration('Enter your email'),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Phone field
+                  _fieldLabel('Phone number (optional)'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: _fieldDecoration('Enter your phone number'),
                   ),
                   const SizedBox(height: 20),
 

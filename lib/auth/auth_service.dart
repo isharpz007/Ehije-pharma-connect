@@ -66,11 +66,17 @@ class AuthService {
     required String name,
     required String emailOrPhone,
     required String password,
+    String? phone,
   }) {
     if (useMockAuth) {
       return _mockSignUp(name: name, emailOrPhone: emailOrPhone, password: password);
     }
-    return _realSignUp(name: name, emailOrPhone: emailOrPhone, password: password);
+    return _realSignUp(
+      name: name,
+      emailOrPhone: emailOrPhone,
+      password: password,
+      phone: phone,
+    );
   }
 
   void logOut() {
@@ -151,6 +157,7 @@ class AuthService {
     required String name,
     required String emailOrPhone,
     required String password,
+    String? phone,
   }) async {
     try {
       final response = await http.post(
@@ -159,6 +166,7 @@ class AuthService {
         body: jsonEncode({
           'name': name,
           'email': emailOrPhone,
+          'phone': phone,
           'password': password,
         }),
       );
