@@ -41,9 +41,9 @@ class AuthService {
   static final AuthService instance = AuthService._internal();
 
   /// Flip this to false once your real backend is ready.
-  static const bool useMockAuth = true;
+  static const bool useMockAuth = false;
 
-  static const String baseUrl = 'https://your-api.example.com/api';
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
 
   String? _token;
   Map<String, dynamic>? _currentUser;

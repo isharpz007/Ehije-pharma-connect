@@ -58,22 +58,20 @@ class ProfileScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Amelia Clarke',
-                                  style: TextStyle(
+                                Text(
+                                  AuthService.instance.currentUser?['name'] as String? ??
+                                      'Guest',
+                                  style: const TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                const Text(
-                                  'amelia.clarke@email.com',
-                                  style: TextStyle(fontSize: 12, color: Colors.white70),
-                                ),
-                                const Text(
-                                  '+44 7700 900123',
-                                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                                Text(
+                                  AuthService.instance.currentUser?['email'] as String? ??
+                                      'Not signed in',
+                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
