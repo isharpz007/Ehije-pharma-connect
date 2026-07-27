@@ -156,8 +156,9 @@ class ProfileScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 52,
                       child: OutlinedButton(
-                        onPressed: () {
-                          AuthService.instance.logOut();
+                        onPressed: () async {
+                          await AuthService.instance.logOut();
+                          if (!context.mounted) return;
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(builder: (_) => const MyApp()),
                             (route) => false,

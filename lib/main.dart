@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'login_screen.dart';
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://fbsqirxfgvrazxbhjfzk.supabase.co',
+    anonKey: 'sb_publishable_5x5OzXiIOF8Rly6Odizb0Q_rvQ6ABDe',
+  );
+
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -139,7 +148,6 @@ class SplashScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
 
                 // Continue as Guest
                 Padding(
@@ -148,11 +156,7 @@ class SplashScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 52,
                     child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
-                        );
-                      },
+                      onPressed: () {},
                       style: OutlinedButton.styleFrom(
                         foregroundColor: darkNavy,
                         side: const BorderSide(color: Color(0xFFE1E3EC)),
