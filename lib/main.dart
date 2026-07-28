@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
 
   await Supabase.initialize(
-    url: 'https://fbsqirxfgvrazxbhjfzk.supabase.co',
-    anonKey: 'sb_publishable_5x5OzXiIOF8Rly6Odizb0Q_rvQ6ABDe',
+    url: dotenv.env['SUPABASE_URL']!,
+    publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(const MyApp());
@@ -49,7 +51,7 @@ class SplashScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -67,7 +69,7 @@ class SplashScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -282,7 +284,7 @@ class _DeliveryIllustration extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Icon(Icons.two_wheeler, size: 54, color: SplashScreen.primaryBlue.withOpacity(0.9)),
+                    Icon(Icons.two_wheeler, size: 54, color: SplashScreen.primaryBlue.withValues(alpha: 0.9)),
                   ],
                 ),
               ),

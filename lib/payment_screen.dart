@@ -96,7 +96,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -306,7 +306,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: green,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: green.withOpacity(0.6),
+                            disabledBackgroundColor: green.withValues(alpha: 0.6),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

@@ -89,7 +89,7 @@ class ProfileScreen extends StatelessWidget {
                                       'Verified',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
