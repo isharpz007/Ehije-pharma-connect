@@ -45,5 +45,4 @@ app.*.map.json
 /android/app/release
 
 # Environment files — never commit secrets
-.env
 .env.*.local
