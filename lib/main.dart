@@ -76,18 +76,11 @@ class SplashScreen extends StatelessWidget {
                     ],
                   ),
                   child: Center(
-                    child: Container(
+                    child: Image.asset(
+                      'assets/logo.png',
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [primaryBlue, tealGreen],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 26),
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
