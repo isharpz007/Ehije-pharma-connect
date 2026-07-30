@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'app_bottom_nav.dart';
 import 'cart_model.dart';
 import 'cart_screen.dart';
+import 'categories_screen.dart';
+import 'product.dart';
 import 'product_details_screen.dart';
+import 'product_service.dart';
 import 'search_results_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  static const Color blue = Color(0xFF3D7BF5);
+  static const Color primaryBlue = Color(0xFF3D7BF5);
   static const Color lightBlueBg = Color(0xFFE3EEFF);
   static const Color darkNavy = Color(0xFF1A1B3A);
   static const Color hintGrey = Color(0xFF9B9FB1);
@@ -242,8 +245,6 @@ class _HealthcareBanner extends StatelessWidget {
   }
 }
 
-/// Small illustration built from icons/shapes, standing in for
-/// artwork of medicine bottles, blister packs and a dropper.
 class _MedicineIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -253,7 +254,7 @@ class _MedicineIllustration extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(Icons.medication_liquid, size: 66, color: HomeScreen.blue),
+          Icon(Icons.medication_liquid, size: 66, color: HomeScreen.primaryBlue),
           const Positioned(
             top: 4,
             left: 6,
@@ -294,7 +295,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         Text(
           'View all',
-          style: TextStyle(fontSize: 13, color: HomeScreen.blue, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 13, color: HomeScreen.primaryBlue, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -322,26 +323,42 @@ class _CategoryRow extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final c = _categories[index];
-          return Column(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: c.color,
-                  borderRadius: BorderRadius.circular(16),
-                  border: c.label == 'More'
-                      ? Border.all(color: const Color(0xFFE2E5EE), width: 1)
-                      : null,
+          return InkWell(
+            onTap: () {
+              if (c.label == 'More') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                );
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SearchResultsScreen(initialCategory: c.label),
+                  ),
+                );
+              }
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: c.color,
+                    borderRadius: BorderRadius.circular(16),
+                    border: c.label == 'More'
+                        ? Border.all(color: const Color(0xFFE2E5EE), width: 1)
+                        : null,
+                  ),
+                  child: Icon(c.icon, color: c.iconColor, size: 24),
                 ),
-                child: Icon(c.icon, color: c.iconColor, size: 24),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                c.label,
-                style: const TextStyle(fontSize: 12, color: HomeScreen.darkNavy),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  c.label,
+                  style: const TextStyle(fontSize: 12, color: HomeScreen.darkNavy),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -349,70 +366,86 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-class _DealItem {
-  final String name;
-  final String location;
-  final String price;
-  final String? oldPrice;
-  final String discount;
-  final IconData icon;
-  final Color iconColor;
-
-  const _DealItem({
-    required this.name,
-    required this.location,
-    required this.price,
-    required this.discount,
-    required this.icon,
-    required this.iconColor,
-    this.oldPrice,
-  });
-}
-
-class _DealsGrid extends StatelessWidget {
+/// Fetches live products from Supabase and shows the first two as
+/// "Today's Deals" (only ones with a discount, i.e. old_price set).
+class _DealsGrid extends StatefulWidget {
   const _DealsGrid();
 
-  static const _deals = [
-    _DealItem(
-      name: 'Paracetamol 500mg',
-      location: 'MedPlus Pharmacy',
-      price: '\$8',
-      oldPrice: '\$12',
-      discount: '23% off',
-      icon: Icons.medication,
-      iconColor: HomeScreen.blue,
-    ),
-    _DealItem(
-      name: 'Vitamin C Tablets',
-      location: 'MedPlus Pharmacy',
-      price: '\$14',
-      oldPrice: '\$20',
-      discount: '29% off',
-      icon: Icons.medication_liquid,
-      iconColor: Color(0xFFE8952B),
-    ),
-  ];
+  @override
+  State<_DealsGrid> createState() => _DealsGridState();
+}
+
+class _DealsGridState extends State<_DealsGrid> {
+  late Future<List<Product>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ProductService.instance.fetchAll();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _deals.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.78,
-      ),
-      itemBuilder: (context, index) => _DealCard(deal: _deals[index]),
+    return FutureBuilder<List<Product>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 30),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              'Could not load deals: ${snapshot.error}',
+              style: const TextStyle(fontSize: 12, color: HomeScreen.hintGrey),
+            ),
+          );
+        }
+
+        final deals = (snapshot.data ?? [])
+            .where((p) => p.oldPrice != null)
+            .take(4)
+            .toList();
+
+        if (deals.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              'No deals right now — check back soon.',
+              style: TextStyle(fontSize: 12, color: HomeScreen.hintGrey),
+            ),
+          );
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: deals.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.78,
+          ),
+          itemBuilder: (context, index) => _DealCard(product: deals[index]),
+        );
+      },
     );
   }
 }
 
 class _DealCard extends StatelessWidget {
-  final _DealItem deal;
-  const _DealCard({required this.deal});
+  final Product product;
+  const _DealCard({required this.product});
+
+  int get _discountPercent {
+    if (product.oldPrice == null || product.oldPrice == 0) return 0;
+    return (((product.oldPrice! - product.price) / product.oldPrice!) * 100).round();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -420,107 +453,125 @@ class _DealCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ProductDetailsScreen()),
+          MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product)),
         );
       },
       child: Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 84,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(deal.icon, color: deal.iconColor, size: 42),
-              ),
-              Positioned(
-                top: 6,
-                left: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 84,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0473F),
-                    borderRadius: BorderRadius.circular(6),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    deal.discount,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: const Icon(Icons.medication, color: HomeScreen.primaryBlue, size: 42),
                 ),
-              ),
-              const Positioned(
-                top: 4,
-                right: 4,
-                child: Icon(Icons.favorite_border, size: 18, color: HomeScreen.hintGrey),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            deal.name,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: HomeScreen.darkNavy),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            deal.location,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, color: HomeScreen.hintGrey),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    deal.price,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: HomeScreen.darkNavy,
-                    ),
-                  ),
-                  if (deal.oldPrice != null) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      deal.oldPrice!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: HomeScreen.hintGrey,
-                        decoration: TextDecoration.lineThrough,
+                if (_discountPercent > 0)
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0473F),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$_discountPercent% off',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ],
-                ],
-              ),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  color: HomeScreen.blue,
-                  shape: BoxShape.circle,
+                  ),
+                const Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Icon(Icons.favorite_border, size: 18, color: HomeScreen.hintGrey),
                 ),
-                child: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 14),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              product.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: HomeScreen.darkNavy),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              product.pharmacy,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10, color: HomeScreen.hintGrey),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '£${product.price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: HomeScreen.darkNavy,
+                      ),
+                    ),
+                    if (product.oldPrice != null) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '£${product.oldPrice!.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: HomeScreen.hintGrey,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                InkWell(
+                  onTap: () {
+                    CartModel.instance.addItem(
+                      product: product,
+                      icon: Icons.medication,
+                      iconColor: HomeScreen.primaryBlue,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Added ${product.name} to cart'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                      color: HomeScreen.primaryBlue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 14),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

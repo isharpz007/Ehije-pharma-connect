@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'cart_model.dart';
+import 'product.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
-  const ProductDetailsScreen({super.key});
+  final Product product;
+  const ProductDetailsScreen({super.key, required this.product});
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -18,7 +20,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   int _quantity = 1;
   bool _isFavorite = false;
-  bool _descriptionExpanded = false;
 
   void _incrementQuantity() => setState(() => _quantity++);
   void _decrementQuantity() {
@@ -27,6 +28,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.product;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
       body: SafeArea(
@@ -39,7 +42,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withOpacity(0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -53,7 +56,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top bar
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -81,7 +83,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Product image
                         Container(
                           width: double.infinity,
                           height: 180,
@@ -89,85 +90,78 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             color: const Color(0xFFECEFF5),
                             borderRadius: BorderRadius.circular(18),
                           ),
-                          child: const _MedicineIllustration(),
+                          child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: Image.network(
+                                    product.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) =>
+                                        const Icon(Icons.medication, size: 64, color: primaryBlue),
+                                  ),
+                                )
+                              : const Icon(Icons.medication, size: 64, color: primaryBlue),
                         ),
                         const SizedBox(height: 18),
 
-                        // Name
-                        const Text(
-                          'Cetirizine 10mg Tablets',
-                          style: TextStyle(
+                        Text(
+                          product.name,
+                          style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
                             color: darkNavy,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'HealWell Pharmacy',
-                          style: TextStyle(fontSize: 13, color: hintGrey),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Rating
-                        Row(
-                          children: [
-                            Row(
-                              children: List.generate(5, (i) {
-                                return Icon(
-                                  i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
-                                  color: const Color(0xFFFFB020),
-                                  size: 18,
-                                );
-                              }),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              '4.8',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: darkNavy,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              '(120 reviews)',
-                              style: TextStyle(fontSize: 13, color: primaryBlue),
-                            ),
-                          ],
+                        Text(
+                          product.pharmacy,
+                          style: const TextStyle(fontSize: 13, color: hintGrey),
                         ),
                         const SizedBox(height: 14),
 
-                        // Price + stock
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              '£4.75',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: darkNavy,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  '£${product.price.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    color: darkNavy,
+                                  ),
+                                ),
+                                if (product.oldPrice != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '£${product.oldPrice!.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: hintGrey,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             Row(
                               children: [
                                 Container(
                                   width: 8,
                                   height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: tealGreen,
+                                  decoration: BoxDecoration(
+                                    color: product.inStock ? tealGreen : Colors.redAccent,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                const Text(
-                                  'In stock',
+                                Text(
+                                  product.inStock ? 'In stock' : 'Out of stock',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: tealGreen,
+                                    color: product.inStock ? tealGreen : Colors.redAccent,
                                   ),
                                 ),
                               ],
@@ -178,56 +172,35 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         const Divider(color: borderGrey),
                         const SizedBox(height: 16),
 
-                        // Description
-                        const Text(
-                          'Description',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: darkNavy,
+                        if (product.description != null && product.description!.isNotEmpty) ...[
+                          const Text(
+                            'Description',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: darkNavy),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Cetirizine is an antihistamine used to relieve allergy '
-                          'symptoms such as runny nose, sneezing, and itching.'
-                          '${_descriptionExpanded ? ' It works by blocking the effects of histamine, a substance the body produces during an allergic reaction, and typically starts working within an hour of taking it.' : ''}',
-                          style: const TextStyle(fontSize: 13, color: hintGrey, height: 1.5),
-                        ),
-                        const SizedBox(height: 6),
-                        InkWell(
-                          onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
-                          child: Text(
-                            _descriptionExpanded ? 'Show less' : 'Read more',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: primaryBlue,
-                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            product.description!,
+                            style: const TextStyle(fontSize: 13, color: hintGrey, height: 1.5),
                           ),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
+                        ],
 
-                        // Dosage
-                        const Text(
-                          'Dosage',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: darkNavy,
+                        if (product.dosage != null && product.dosage!.isNotEmpty) ...[
+                          const Text(
+                            'Dosage',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: darkNavy),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Adults and children 6 years and over:\nOne 10mg tablet once daily.',
-                          style: TextStyle(fontSize: 13, color: hintGrey, height: 1.5),
-                        ),
+                          const SizedBox(height: 8),
+                          Text(
+                            product.dosage!,
+                            style: const TextStyle(fontSize: 13, color: hintGrey, height: 1.5),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
 
-                // Bottom bar: quantity + add to cart
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                   decoration: const BoxDecoration(
@@ -264,35 +237,34 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         child: SizedBox(
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () {
-                              CartModel.instance.addItem(
-                                name: 'Cetirizine 10mg Tablets',
-                                pharmacy: 'HealWell Pharmacy',
-                                price: 4.75,
-                                icon: Icons.medication_liquid_outlined,
-                                iconColor: primaryBlue,
-                                quantity: _quantity,
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Added $_quantity to cart',
-                                  ),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                            onPressed: !product.inStock
+                                ? null
+                                : () {
+                                    CartModel.instance.addItem(
+                                      product: product,
+                                      icon: Icons.medication,
+                                      iconColor: primaryBlue,
+                                      quantity: _quantity,
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Added $_quantity to cart'),
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryBlue,
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor: const Color(0xFFC7CBD6),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text(
-                              'Add to Cart',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            child: Text(
+                              product.inStock ? 'Add to Cart' : 'Out of Stock',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -324,102 +296,4 @@ class _StepperButton extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A stand-in medicine illustration (box + pills + hand), built from
-/// shapes and icons so no external image asset is required.
-class _MedicineIllustration extends StatelessWidget {
-  const _MedicineIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Medicine box
-        Positioned(
-          left: 60,
-          top: 40,
-          child: Transform.rotate(
-            angle: -0.15,
-            child: Container(
-              width: 90,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFD5DAE6)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: _ProductColors.primaryBlue,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: 60,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _ProductColors.tealGreen,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Pills
-        const Positioned(
-          left: 100,
-          bottom: 40,
-          child: _Pill(),
-        ),
-        const Positioned(
-          left: 130,
-          bottom: 32,
-          child: _Pill(),
-        ),
-        const Positioned(
-          left: 160,
-          bottom: 46,
-          child: _Pill(),
-        ),
-        // Hand holding pills
-        Positioned(
-          right: 30,
-          bottom: 20,
-          child: Icon(Icons.back_hand_outlined, size: 64, color: Colors.brown.shade300),
-        ),
-      ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFD5DAE6)),
-      ),
-    );
-  }
-}
-
-class _ProductColors {
-  static const Color primaryBlue = Color(0xFF3B3FE0);
-  static const Color tealGreen = Color(0xFF17B37A);
 }

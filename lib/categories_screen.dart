@@ -71,7 +71,7 @@ class CategoriesScreen extends StatelessWidget {
                             Icon(Icons.search, size: 20, color: hintGrey),
                             SizedBox(width: 8),
                             Text(
-                              'Search categories',
+                              'Search medicines...',
                               style: TextStyle(fontSize: 13, color: hintGrey),
                             ),
                           ],
@@ -94,9 +94,17 @@ class CategoriesScreen extends StatelessWidget {
                         final c = _categories[index];
                         return InkWell(
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const SearchResultsScreen()),
-                            );
+                            if (c.label == 'Other') {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const SearchResultsScreen()),
+                              );
+                            } else {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => SearchResultsScreen(initialCategory: c.label),
+                                ),
+                              );
+                            }
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Column(
