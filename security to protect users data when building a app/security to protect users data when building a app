@@ -1,0 +1,620 @@
+When building an app, protecting user data requires security at **every layer**: mobile app, backend, database, authentication, storage, and infrastructure. Here is a complete checklist you can follow (especially for a Flutter + Supabase/Laravel app).
+
+# 1. Authentication Security
+
+✅ **Use secure authentication**
+
+* Use OAuth (Google, Apple, Microsoft) where possible
+* Use secure email/password authentication
+* Never store passwords yourself
+* Store only hashed passwords (bcrypt/Argon2)
+
+For Supabase:
+
+* Enable Supabase Auth
+* Use email verification
+* Enable MFA (Multi-Factor Authentication)
+
+Protect against:
+
+* Brute-force attacks
+* Account takeover
+* Credential stuffing
+
+---
+
+# 2. Password Security
+
+Never store:
+
+❌ Plain passwords
+❌ Passwords in databases
+❌ Passwords in logs
+
+Use:
+
+✅ Strong password rules:
+
+* Minimum 8–12 characters
+* Uppercase + lowercase
+* Numbers
+* Symbols
+
+Example:
+
+```
+OdiApp@2026Secure
+```
+
+Use:
+
+* Argon2id
+* bcrypt
+
+---
+
+# 3. Database Security
+
+For Supabase/PostgreSQL:
+
+## Enable Row Level Security (RLS)
+
+This is one of the most important protections.
+
+Example:
+
+Users should only see their own profile:
+
+```sql
+CREATE POLICY "Users can view own profile"
+ON profiles
+FOR SELECT
+USING (auth.uid() = id);
+```
+
+Without RLS:
+
+❌ User A could access User B's data.
+
+With RLS:
+
+✅ Users only access allowed data.
+
+---
+
+# 4. API Security
+
+Protect your backend APIs.
+
+Use:
+
+✅ Authentication tokens
+✅ JWT validation
+✅ Rate limiting
+✅ Request validation
+✅ API keys restrictions
+
+Example:
+
+Bad:
+
+```
+GET /users/123
+```
+
+Anyone can access.
+
+Better:
+
+```
+GET /users/123
+Authorization: Bearer TOKEN
+```
+
+---
+
+# 5. Never Expose Secret Keys
+
+Never put these inside Flutter:
+
+❌ Database password
+❌ Supabase service_role key
+❌ AWS secret keys
+❌ Payment secret keys
+
+Flutter apps can be reverse engineered.
+
+Safe:
+
+```
+SUPABASE_ANON_KEY
+```
+
+Unsafe:
+
+```
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+Keep secrets on:
+
+* Backend server
+* Environment variables
+
+Example:
+
+```
+.env
+
+DATABASE_PASSWORD=
+STRIPE_SECRET_KEY=
+SUPABASE_SERVICE_KEY=
+```
+
+---
+
+# 6. Secure Data Storage on Mobile
+
+Do not store sensitive data using:
+
+❌ SharedPreferences
+❌ Plain text files
+❌ Local databases without encryption
+
+Use:
+
+Flutter:
+
+✅ flutter_secure_storage
+
+Stores:
+
+* Tokens
+* Refresh tokens
+* Encryption keys
+
+---
+
+# 7. Encryption
+
+## Data in transit
+
+Always use:
+
+✅ HTTPS
+✅ TLS 1.2+
+
+Never:
+
+```
+http://api.example.com
+```
+
+Use:
+
+```
+https://api.example.com
+```
+
+---
+
+## Data at rest
+
+Encrypt sensitive data:
+
+Examples:
+
+* Phone numbers
+* Addresses
+* Medical records
+* Payment information
+
+Use:
+
+* AES-256 encryption
+
+---
+
+# 8. User Privacy Protection
+
+Only collect what you need.
+
+Bad:
+
+Collect:
+
+* Full address
+* Birthday
+* Contacts
+* Location
+
+when unnecessary.
+
+Good:
+
+Only collect:
+
+* Name
+* Email
+* Required information
+
+Follow:
+
+* GDPR
+* Data Protection Act
+* Privacy policies
+
+---
+
+# 9. Secure File Uploads
+
+For profile pictures, documents, videos:
+
+Protect against:
+
+* Malware uploads
+* Fake file types
+* Huge files
+
+Implement:
+
+✅ File size limits
+
+Example:
+
+```
+Maximum image size: 5MB
+Maximum video: 100MB
+```
+
+Check:
+
+* File extension
+* MIME type
+
+Store files securely:
+
+* Supabase Storage
+* Cloudinary
+* AWS S3
+
+---
+
+# 10. Session Security
+
+Protect login sessions:
+
+Use:
+
+✅ Short-lived access tokens
+
+Example:
+
+```
+Access token:
+15 minutes
+
+Refresh token:
+30 days
+```
+
+Implement:
+
+* Logout everywhere
+* Token rotation
+* Session expiry
+
+---
+
+# 11. Input Validation
+
+Never trust user input.
+
+Protect against:
+
+* SQL injection
+* XSS
+* Code injection
+
+Example:
+
+Bad:
+
+```sql
+SELECT * FROM users WHERE email='$email'
+```
+
+Safe:
+
+Use prepared statements:
+
+```sql
+SELECT * FROM users WHERE email=?
+```
+
+---
+
+# 12. Prevent SQL Injection
+
+Use:
+
+✅ ORM
+
+Examples:
+
+Laravel:
+
+```php
+User::where('email',$email)->first();
+```
+
+Not:
+
+```php
+DB::raw($input)
+```
+
+---
+
+# 13. Prevent XSS Attacks
+
+When displaying user content:
+
+Escape:
+
+```html
+<script>alert("hack")</script>
+```
+
+should display as text, not execute.
+
+---
+
+# 14. Secure Payments
+
+If your app handles payments:
+
+Never store:
+
+❌ Card numbers
+❌ CVV
+❌ Bank details
+
+Use:
+
+* Stripe
+* PayPal
+* Flutterwave
+
+They handle PCI compliance.
+
+---
+
+# 15. Logging Security
+
+Never log:
+
+❌ Passwords
+❌ Tokens
+❌ Personal information
+
+Bad:
+
+```
+User login:
+email=test@gmail.com
+password=123456
+```
+
+Good:
+
+```
+User login successful
+User ID: 93848
+```
+
+---
+
+# 16. Admin Dashboard Security
+
+Protect admin panels:
+
+Use:
+
+✅ Role-based access control (RBAC)
+
+Example:
+
+Roles:
+
+```
+Admin
+Manager
+Customer
+Seller
+Support
+```
+
+Permissions:
+
+```
+Admin:
+Delete users
+
+Customer:
+View own account
+```
+
+---
+
+# 17. Two-Factor Authentication
+
+Add:
+
+* Authenticator apps
+* SMS verification
+* Email codes
+
+Examples:
+
+* Google Authenticator
+* Authy
+
+---
+
+# 18. Device Security
+
+For mobile apps:
+
+Add:
+
+* Root detection
+* Jailbreak detection
+* App integrity checks
+
+---
+
+# 19. App Code Protection
+
+Flutter:
+
+Enable:
+
+```
+flutter build apk --obfuscate --split-debug-info
+```
+
+This makes reverse engineering harder.
+
+---
+
+# 20. Dependency Security
+
+Keep packages updated.
+
+Check:
+
+Flutter:
+
+```
+flutter pub outdated
+```
+
+Node:
+
+```
+npm audit
+```
+
+Laravel:
+
+```
+composer audit
+```
+
+---
+
+# 21. Backup & Recovery
+
+Have:
+
+✅ Database backups
+✅ Disaster recovery plan
+✅ Restore testing
+
+For Supabase:
+
+* Enable backups
+* Test restoration
+
+---
+
+# 22. Monitoring
+
+Monitor:
+
+* Failed logins
+* Suspicious activity
+* API abuse
+* Database changes
+
+Tools:
+
+* Sentry
+* Firebase Crashlytics
+* Supabase Logs
+
+---
+
+# 23. Security Testing
+
+Before launch:
+
+Test:
+
+✅ Authentication
+✅ Permissions
+✅ APIs
+✅ Database rules
+✅ File uploads
+
+Tools:
+
+* OWASP ZAP
+* Burp Suite
+* SonarQube
+
+---
+
+# 24. Secure Development Practices
+
+Use:
+
+✅ Git branches
+✅ Code reviews
+✅ Environment variables
+✅ Secrets management
+
+Never upload:
+
+```
+.env
+google-services.json
+service_role keys
+```
+
+to GitHub.
+
+---
+
+# 25. Follow OWASP Mobile Security Rules
+
+The main threats:
+
+1. Improper authentication
+2. Insecure storage
+3. Insecure communication
+4. Code tampering
+5. Poor cryptography
+6. Privacy leaks
+7. Poor authorization
+
+---
+
+## For your Flutter + Supabase + Laravel app, the minimum security setup should be:
+
+✅ Supabase Auth
+✅ Email verification
+✅ MFA
+✅ Row Level Security (RLS)
+✅ HTTPS only
+✅ Secure storage in Flutter
+✅ Laravel API authentication
+✅ Role permissions
+✅ Encrypted sensitive data
+✅ Cloudinary/Supabase secure uploads
+✅ Rate limiting
+✅ Monitoring
+✅ Regular backups
+
+That setup is close to what production apps use.
