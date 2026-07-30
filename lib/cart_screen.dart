@@ -355,7 +355,7 @@ class _SummaryRow extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: bold ? 18 : 14,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w700,
             color: darkNavy,
           ),
         ),
