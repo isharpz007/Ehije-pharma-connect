@@ -257,6 +257,11 @@ class _AddressesScreenState extends State<AddressesScreen> {
                                     ],
                                   ),
                                 ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                  onPressed: () => _deleteAddress(address.id),
+                                  tooltip: 'Delete address',
+                                ),
                                 InkWell(
                                   onTap: () => _openEditor(existing: address),
                                   child: const Text(
@@ -281,6 +286,48 @@ class _AddressesScreenState extends State<AddressesScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _deleteAddress(int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Address'),
+          content: const Text('Are you sure you want to delete this address? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  await AddressService.instance.deleteAddress(id);
+                  _refresh();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Address deleted successfully')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete address: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
