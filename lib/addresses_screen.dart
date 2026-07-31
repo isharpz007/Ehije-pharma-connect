@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
-class _Address {
-  final String label;
-  final String line1;
-  final String line2;
-
-  const _Address({required this.label, required this.line1, required this.line2});
-}
+import 'address.dart';
+import 'address_service.dart';
 
 class AddressesScreen extends StatefulWidget {
   const AddressesScreen({super.key});
@@ -21,12 +16,114 @@ class _AddressesScreenState extends State<AddressesScreen> {
   static const Color hintGrey = Color(0xFF9B9FB1);
   static const Color borderGrey = Color(0xFFE1E3EC);
 
-  static const _addresses = [
-    _Address(label: 'Home', line1: '14 Rosewood Ave, NW1', line2: 'London, United Kingdom'),
-    _Address(label: 'Work', line1: 'Office 12, King Street', line2: 'London, United Kingdom'),
-  ];
+  late Future<List<Address>> _future;
 
-  int _selectedIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    _future = AddressService.instance.fetchMyAddresses();
+  }
+
+  void _refresh() {
+    setState(() {
+      _future = AddressService.instance.fetchMyAddresses();
+    });
+  }
+
+  Future<void> _openEditor({Address? existing}) async {
+    final labelController = TextEditingController(text: existing?.label ?? '');
+    final line1Controller = TextEditingController(text: existing?.line1 ?? '');
+    final line2Controller = TextEditingController(text: existing?.line2 ?? '');
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                existing == null ? 'Add Address' : 'Edit Address',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: darkNavy),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(labelText: 'Label (e.g. Home, Work)'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: line1Controller,
+                decoration: const InputDecoration(labelText: 'Address line 1'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: line2Controller,
+                decoration: const InputDecoration(labelText: 'Address line 2 (city, country)'),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final label = labelController.text.trim();
+                    final line1 = line1Controller.text.trim();
+                    final line2 = line2Controller.text.trim();
+
+                    if (label.isEmpty || line1.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill in at least a label and address line')),
+                      );
+                      return;
+                    }
+
+                    if (existing == null) {
+                      await AddressService.instance.addAddress(
+                        label: label,
+                        line1: line1,
+                        line2: line2.isEmpty ? null : line2,
+                      );
+                    } else {
+                      await AddressService.instance.updateAddress(
+                        id: existing.id,
+                        label: label,
+                        line1: line1,
+                        line2: line2.isEmpty ? null : line2,
+                      );
+                    }
+
+                    if (context.mounted) Navigator.pop(context, true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (saved == true) _refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,15 +148,11 @@ class _AddressesScreenState extends State<AddressesScreen> {
                   const Expanded(
                     child: Text(
                       'My Addresses',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: darkNavy,
-                      ),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: darkNavy),
                     ),
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: () => _openEditor(),
                     child: const Row(
                       children: [
                         Icon(Icons.add, size: 18, color: primaryBlue),
@@ -75,68 +168,111 @@ class _AddressesScreenState extends State<AddressesScreen> {
               ),
               const SizedBox(height: 20),
               Expanded(
-                child: ListView.separated(
-                  itemCount: _addresses.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final address = _addresses[index];
-                    final selected = index == _selectedIndex;
-                    return InkWell(
-                      onTap: () => setState(() => _selectedIndex = index),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: selected ? const Color(0xFFF1F2FE) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: selected ? primaryBlue : borderGrey),
+                child: FutureBuilder<List<Address>>(
+                  future: _future,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Could not load addresses: ${snapshot.error}',
+                          style: const TextStyle(fontSize: 13, color: hintGrey),
                         ),
-                        child: Row(
+                      );
+                    }
+
+                    final addresses = snapshot.data ?? [];
+
+                    if (addresses.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                              color: selected ? primaryBlue : hintGrey,
-                              size: 20,
+                            const Text(
+                              'No saved addresses yet',
+                              style: TextStyle(fontSize: 14, color: hintGrey),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    address.label,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: darkNavy,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    address.line1,
-                                    style: const TextStyle(fontSize: 12, color: hintGrey),
-                                  ),
-                                  Text(
-                                    address.line2,
-                                    style: const TextStyle(fontSize: 12, color: hintGrey),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () {},
-                              child: const Text(
-                                'Edit',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: primaryBlue,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () => _openEditor(),
+                              child: const Text('Add your first address'),
                             ),
                           ],
                         ),
-                      ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      itemCount: addresses.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final address = addresses[index];
+                        final selected = address.isDefault;
+                        return InkWell(
+                          onTap: () async {
+                            await AddressService.instance.setDefault(address.id);
+                            _refresh();
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: selected ? const Color(0xFFF1F2FE) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: selected ? primaryBlue : borderGrey),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                  color: selected ? primaryBlue : hintGrey,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        address.label,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: darkNavy,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        address.line1,
+                                        style: const TextStyle(fontSize: 12, color: hintGrey),
+                                      ),
+                                      if (address.line2 != null && address.line2!.isNotEmpty)
+                                        Text(
+                                          address.line2!,
+                                          style: const TextStyle(fontSize: 12, color: hintGrey),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => _openEditor(existing: address),
+                                  child: const Text(
+                                    'Edit',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'cart_model.dart';
 import 'home_screen.dart';
+import 'order_service.dart';
 
 enum _PaymentMethod { card, applePay, payPal }
 
 class PaymentScreen extends StatefulWidget {
   final double total;
-  const PaymentScreen({super.key, required this.total});
+  final String? deliveryAddress;
+  const PaymentScreen({super.key, required this.total, this.deliveryAddress});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -31,7 +33,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     if (!mounted) return;
 
-    await CartModel.instance.clearCart();
+    final cart = CartModel.instance;
+    final deliveryFee = widget.total - cart.subtotal;
+    final pharmacy = cart.items.isNotEmpty ? cart.items.first.pharmacy : 'PharmaConnect';
+
+    try {
+      await OrderService.instance.createOrderFromCart(
+        pharmacy: pharmacy,
+        deliveryFee: deliveryFee,
+        deliveryAddress: widget.deliveryAddress,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not place your order: $e')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
 
     // Confirmation, then return all the way to Home.
     await showDialog(

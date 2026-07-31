@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'address.dart';
+import 'address_service.dart';
+import 'addresses_screen.dart';
 import 'app_bottom_nav.dart';
 import 'cart_model.dart';
 import 'cart_screen.dart';
@@ -73,27 +76,48 @@ class _TopBar extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Delivery to',
-                style: TextStyle(fontSize: 12, color: HomeScreen.hintGrey),
-              ),
-              Row(
-                children: const [
-                  Text(
-                    'Home, New York',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: HomeScreen.darkNavy,
-                    ),
-                  ),
-                  Icon(Icons.keyboard_arrow_down, size: 18, color: HomeScreen.darkNavy),
-                ],
-              ),
-            ],
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddressesScreen()),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Delivery to',
+                  style: TextStyle(fontSize: 12, color: HomeScreen.hintGrey),
+                ),
+                FutureBuilder<Address?>(
+                  future: AddressService.instance.fetchDefaultAddress(),
+                  builder: (context, snapshot) {
+                    final address = snapshot.data;
+                    final label = address != null
+                        ? '${address.label}, ${address.line1}'
+                        : 'Add a delivery address';
+
+                    return Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: HomeScreen.darkNavy,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_down, size: 18, color: HomeScreen.darkNavy),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         _IconBadge(icon: Icons.notifications_none_rounded),
@@ -320,7 +344,7 @@ class _CategoryRow extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final c = _categories[index];
           return InkWell(

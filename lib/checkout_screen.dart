@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'address.dart';
+import 'address_service.dart';
+import 'addresses_screen.dart';
 import 'cart_model.dart';
 import 'payment_screen.dart';
 
@@ -21,9 +24,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   _DeliveryOption _selectedDelivery = _DeliveryOption.standard;
   final _couponController = TextEditingController();
+  Address? _address;
 
   double get _deliveryFee =>
       _selectedDelivery == _DeliveryOption.standard ? 2.50 : 5.00;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddress();
+  }
+
+  Future<void> _loadAddress() async {
+    final address = await AddressService.instance.fetchDefaultAddress();
+    if (mounted) setState(() => _address = address);
+  }
 
   @override
   void dispose() {
@@ -49,7 +64,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withOpacity(0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -105,7 +120,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                             ),
                             InkWell(
-                              onTap: () {},
+                              onTap: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const AddressesScreen()),
+                                );
+                                _loadAddress();
+                              },
                               child: const Text(
                                 'Change',
                                 style: TextStyle(
@@ -126,28 +146,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: borderGrey),
                           ),
-                          child: const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Mrs. Amelia Clarke',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: darkNavy,
+                          child: _address == null
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'No address saved yet',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: darkNavy,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Add one to continue with delivery.',
+                                      style: TextStyle(fontSize: 13, color: hintGrey),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _address!.label,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: darkNavy,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _address!.line1,
+                                      style: const TextStyle(fontSize: 13, color: hintGrey),
+                                    ),
+                                    if (_address!.line2 != null && _address!.line2!.isNotEmpty)
+                                      Text(
+                                        _address!.line2!,
+                                        style: const TextStyle(fontSize: 13, color: hintGrey),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                '14 Rosewood Ave, NW1',
-                                style: TextStyle(fontSize: 13, color: hintGrey),
-                              ),
-                              Text(
-                                'London, United Kingdom',
-                                style: TextStyle(fontSize: 13, color: hintGrey),
-                              ),
-                            ],
-                          ),
                         ),
                         const SizedBox(height: 24),
 
@@ -265,12 +305,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: cart.items.isEmpty
+                      onPressed: (cart.items.isEmpty || _address == null)
                           ? null
                           : () {
+                              final addressText = _address!.line2 != null && _address!.line2!.isNotEmpty
+                                  ? '${_address!.label}, ${_address!.line1}, ${_address!.line2}'
+                                  : '${_address!.label}, ${_address!.line1}';
+
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => PaymentScreen(total: total),
+                                  builder: (_) => PaymentScreen(
+                                    total: total,
+                                    deliveryAddress: addressText,
+                                  ),
                                 ),
                               );
                             },
